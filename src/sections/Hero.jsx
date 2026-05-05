@@ -1,50 +1,53 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, ArrowRight, MapPin, Dog } from 'lucide-react';
+import { MessageCircle, ArrowRight } from 'lucide-react';
 
 const Hero = () => {
   const [footprints, setFootprints] = useState([]);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isInside, setIsInside] = useState(false);
+  const heroRef = useRef(null);
   
-  // Farenin katettiği mesafeyi ölçmek için ref kullanıyoruz
+  // Farenin katettiği mesafeyi ölçmek için ref
   const lastPos = useRef({ x: 0, y: 0 });
-  const distanceThreshold = 60; // Her 60 pikselde bir pati izi bırakır
+  const distanceThreshold = 65; // İzlerin sıklığı
 
   const handleMouseMove = (e) => {
-    setMousePos({ x: e.clientX, y: e.clientY });
+    if (!heroRef.current) return;
+    
+    // Kapsayıcıya göre koordinat hesaplama
+    const rect = heroRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
     // Fare hareket ettikçe mesafeyi hesapla
-    const dx = e.clientX - lastPos.current.x;
-    const dy = e.clientY - lastPos.current.y;
+    const dx = x - lastPos.current.x;
+    const dy = y - lastPos.current.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     // Eğer fare yeterince mesafe katettiyse yeni pati izi bırak
     if (distance > distanceThreshold) {
       const newFootprint = {
         id: Date.now(),
-        x: e.clientX,
-        y: e.clientY,
-        rotate: Math.atan2(dy, dx) * (180 / Math.PI) + 90, // Hareket yönüne göre pati döner
+        x: x,
+        y: y,
+        rotate: Math.atan2(dy, dx) * (180 / Math.PI) + 90,
       };
       
-      setFootprints((prev) => [...prev.slice(-6), newFootprint]);
-      lastPos.current = { x: e.clientX, y: e.clientY };
+      setFootprints((prev) => [...prev.slice(-7), newFootprint]);
+      lastPos.current = { x, y };
     }
   };
 
   useEffect(() => {
     const timer = setInterval(() => {
       setFootprints((prev) => prev.slice(1));
-    }, 2000);
+    }, 1500);
     return () => clearInterval(timer);
   }, []);
 
   return (
     <div 
+      ref={heroRef}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsInside(true)}
-      onMouseLeave={() => setIsInside(false)}
-      className={`relative min-h-screen w-full overflow-hidden flex items-center justify-center bg-[#fdfaf5] pt-32 md:pt-16 ${isInside ? 'md:cursor-none' : 'cursor-default'}`}
+      className="relative min-h-screen w-full overflow-hidden flex items-center justify-center bg-[#fdfaf5] pt-32 md:pt-16 cursor-default"
     >
       {/* 🌳 Arka Plan */}
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -56,39 +59,27 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-tr from-orange-50/95 via-transparent to-transparent"></div>
       </div>
 
-      {/* 🐶 Köpek İmleci */}
-      {isInside && (
-        <div 
-          className="fixed z-[9999] pointer-events-none transition-transform duration-75 ease-out hidden md:block text-orange-600"
-          style={{ 
-            left: `${mousePos.x}px`, 
-            top: `${mousePos.y}px`,
-            transform: 'translate(-50%, -50%)' 
-          }}
-        >
-          <Dog size={34} strokeWidth={2.8} className="drop-shadow-md" />
-        </div>
-      )}
-
       {/* 🐾 Akışkan Pati İzleri */}
-      {footprints.map((print) => (
-        <div
-          key={print.id}
-          className="fixed pointer-events-none z-10 animate-fade-in-out"
-          style={{
-            left: print.x,
-            top: print.y,
-            transform: `translate(-50%, -50%) rotate(${print.rotate}deg)`,
-          }}
-        >
-          <svg width="35" height="35" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="16" r="4" className="fill-orange-600/30" />
-            <circle cx="7" cy="10" r="2.5" className="fill-orange-500/30" />
-            <circle cx="12" cy="7" r="2.5" className="fill-orange-500/30" />
-            <circle cx="17" cy="10" r="2.5" className="fill-orange-500/30" />
-          </svg>
-        </div>
-      ))}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {footprints.map((print) => (
+          <div
+            key={print.id}
+            className="absolute animate-fade-in-out"
+            style={{
+              left: print.x,
+              top: print.y,
+              transform: `translate(-50%, -50%) rotate(${print.rotate}deg)`,
+            }}
+          >
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="16" r="4" className="fill-orange-600/20" />
+              <circle cx="7" cy="10" r="2.5" className="fill-orange-500/20" />
+              <circle cx="12" cy="7" r="2.5" className="fill-orange-500/20" />
+              <circle cx="17" cy="10" r="2.5" className="fill-orange-500/20" />
+            </svg>
+          </div>
+        ))}
+      </div>
 
       {/* ✍️ İçerik */}
       <div className="relative z-20 text-center px-4 sm:px-6 max-w-5xl">
@@ -133,7 +124,7 @@ const Hero = () => {
           100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
         }
         .animate-fade-in-out {
-          animation: fadeInOut 2.5s ease-out forwards;
+          animation: fadeInOut 2s ease-out forwards;
         }
       `}</style>
     </div>

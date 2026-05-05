@@ -1,5 +1,10 @@
 import Navbar from './components/Navbar';
 import Hero from './sections/Hero';
+import Footer from './components/Footer';
+import MapSection from './sections/MapSection';
+import Portfolio from './sections/Portfolio';
+import ServicesSection from './sections/ServicesSection';
+import WhyUs from './sections/WhyUs';
 
 function App() {
   return (
@@ -8,7 +13,12 @@ function App() {
       <Navbar /> 
       <main>
         <Hero />
+        <ServicesSection />
+        <WhyUs />
+        <Portfolio />
+        <MapSection />
       </main>
+      <Footer />
     </div>
   );
 }
