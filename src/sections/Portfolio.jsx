@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Play, Image as ImageIcon, Camera, Video } from 'lucide-react';
-// Not: projects verisindeki type 'video' veya 'image' olmalı
-import { projects } from '../data/projects'; 
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Camera, Video } from 'lucide-react';
+// --- FIREBASE BAĞLANTISI ---
+import { db } from '../firebase'; 
+import { ref, onValue } from "firebase/database";
 
 const PortfolioSlider = ({ title, data, isVideo }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -14,9 +15,11 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
     setCurrentIndex((prev) => (prev === 0 ? data.length - 1 : prev - 1));
   };
 
+  // YouTube Shorts ve Normal Video ayrımını yapan merkezi fonksiyon
   const getEmbedUrl = (url) => {
     if (!url) return "";
     let videoId = "";
+
     if (url.includes('shorts/')) {
       videoId = url.split('shorts/')[1].split(/[?#&]/)[0];
     } else if (url.includes('v=')) {
@@ -24,6 +27,8 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
     } else if (url.includes('youtu.be/')) {
       videoId = url.split('youtu.be/')[1].split(/[?#&]/)[0];
     }
+
+    // Video ID bulunduysa embed formatına çevir, bulunamadıysa orijinal url'yi dön
     return videoId 
       ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1` 
       : url;
@@ -43,30 +48,29 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
         <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight italic">{title}</h3>
       </div>
 
-      {/* Ana Çerçeve - Köşeler daha oval (Pet dostu) */}
+      {/* Ana Çerçeve */}
       <div className="relative group bg-zinc-950 rounded-[3rem] overflow-hidden shadow-[0_25px_60px_-15px_rgba(234,88,12,0.15)] aspect-[4/3] sm:aspect-square lg:aspect-[4/3] border-4 border-white">
         <div className="w-full h-full">
           {isVideo ? (
             <iframe
-              key={currentItem.url}
+              key={currentItem?.url}
               className="w-full h-full border-0"
-              src={getEmbedUrl(currentItem.url)}
-              title={currentItem.title}
+              src={getEmbedUrl(currentItem?.url)}
+              title={currentItem?.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
           ) : (
             <div className="relative w-full h-full">
               <img 
-                src={currentItem.url} 
-                alt={currentItem.title} 
+                src={currentItem?.url} 
+                alt={currentItem?.title} 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
               />
-              {/* Bilgi Katmanı */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end">
                 <span className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-1">Bakım & Sosyalleşme</span>
-                <h4 className="text-white text-2xl font-black uppercase italic tracking-tighter">{currentItem.title}</h4>
-                <p className="text-gray-300 text-sm mt-2 opacity-90 font-medium leading-relaxed">{currentItem.description}</p>
+                <h4 className="text-white text-2xl font-black uppercase italic tracking-tighter">{currentItem?.title}</h4>
+                <p className="text-gray-300 text-sm mt-2 opacity-90 font-medium leading-relaxed">{currentItem?.description}</p>
               </div>
             </div>
           )}
@@ -81,7 +85,7 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
         </button>
       </div>
 
-      {/* Alt Kontroller (Progress Bar) */}
+      {/* Alt Kontroller */}
       <div className="flex items-center justify-between mt-8 px-4">
         <div className="flex gap-2 flex-1 max-w-[200px]">
           {data.map((_, index) => (
@@ -112,16 +116,36 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
 };
 
 const Portfolio = () => {
-  const videos = projects.filter(p => p.type === 'video');
-  const photos = projects.filter(p => p.type === 'image');
+  const [allProjects, setAllProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // --- FIREBASE'DEN VERİ ÇEKME ---
+  useEffect(() => {
+    const dbRef = ref(db, 'projects');
+    const unsubscribe = onValue(dbRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const projectsList = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key]
+        }));
+        setAllProjects(projectsList);
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const videos = allProjects.filter(p => p.type === 'video');
+  const photos = allProjects.filter(p => p.type === 'image');
+
+  if (loading) return null;
 
   return (
     <section id="galeri" className="py-32 bg-[#fdfaf5] relative overflow-hidden">
-      {/* Dekoratif Arka Plan Elemanı */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-orange-100/30 rounded-full blur-3xl -mr-48 -mt-48"></div>
 
       <div className="max-w-[1400px] mx-auto px-6 relative z-10">
-        {/* ANA BAŞLIK */}
         <div className="text-center mb-20 flex flex-col items-center">
           <div className="flex items-center gap-2 mb-4">
              <div className="h-px w-10 bg-orange-300"></div>
