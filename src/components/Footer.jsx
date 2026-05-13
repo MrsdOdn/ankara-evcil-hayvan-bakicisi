@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin } from 'lucide-react';
 import logo from '../assets/Nlogo.png';
 import { db } from '../firebase';
 import { ref, onValue } from "firebase/database";
+import { Link } from 'react-router-dom';
 
 // --- YARDIMCI BİLEŞEN: SocialLink ---
 const SocialLink = ({ href, icon, color, label }) => {
@@ -110,7 +111,7 @@ const Footer = () => {
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8" id="iletisim">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
-          
+
           {/* Sosyal Medya */}
           <div className="flex flex-col items-center sm:items-start">
             <h4 className="text-orange-500 font-bold uppercase tracking-widest text-sm mb-6 border-b border-orange-500/20 pb-2">📱 SOSYAL MEDYA</h4>
@@ -158,11 +159,12 @@ const Footer = () => {
             <div className="group relative">
               <div className="absolute inset-0 bg-orange-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               <div className="relative p-2 bg-gradient-to-b from-white/10 to-transparent rounded-full border border-white/10 backdrop-blur-md transition-all duration-500 group-hover:border-orange-500/50 group-hover:scale-105 shadow-2xl">
-                <img
-                  src={logo}
-                  alt="Ankara Pati Logo"
-                  className="h-32 w-32 sm:h-40 sm:w-40 object-contain rounded-full shadow-inner"
-                />
+                <Link to="/admin-giris">
+                  <img
+                    src={logo}
+                    alt="Ankara Pati Logo"
+                    className="h-32 w-32 sm:h-40 sm:w-40 object-contain rounded-full shadow-inner"
+                  /></Link>
                 <div className="absolute bottom-2 right-2 bg-orange-500 p-2 rounded-full shadow-lg transform rotate-12 group-hover:rotate-0 transition-transform duration-500">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
                     <path d="M12 2c-.7 0-1.5.5-2 1.2-.5-.7-1.3-1.2-2-1.2-1.7 0-3 1.3-3 3 0 1.5.8 2.3 1.6 3l1.4 1.2c.6.5 1.3.8 2 .8s1.4-.3 2-.8l1.4-1.2c.8-.7 1.6-1.5 1.6-3 0-1.7-1.3-3-3-3zm-8 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm16 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-8 4c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4z" />
