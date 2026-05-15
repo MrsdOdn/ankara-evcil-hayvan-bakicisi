@@ -15,8 +15,8 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
     setCurrentIndex((prev) => (prev === 0 ? data.length - 1 : prev - 1));
   };
 
-  // YouTube Shorts ve Normal Video ayrımını yapan merkezi fonksiyon
-  const getEmbedUrl = (url) => {
+  // YouTube videoları için temiz gömme (embed) linki üreten fonksiyon
+  const getEmbedUrl = (url, isBackground = false) => {
     if (!url) return "";
     let videoId = "";
 
@@ -28,10 +28,15 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
       videoId = url.split('youtu.be/')[1].split(/[?#&]/)[0];
     }
 
-    // Video ID bulunduysa embed formatına çevir, bulunamadıysa orijinal url'yi dön
-    return videoId 
-      ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1` 
-      : url;
+    if (!videoId) return url;
+
+    // Eğer arka plan videosu ise: sessiz yap, otomatik oynat, kontrolleri gizle ve döngüye al
+    if (isBackground) {
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0`;
+    }
+
+    // Normal ön plandaki video oynatıcı
+    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1`;
   };
 
   const currentItem = data[currentIndex];
@@ -39,7 +44,7 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
   if (!data || data.length === 0) return null;
 
   return (
-    <div className="w-full lg:w-1/2 flex flex-col mb-16 px-2">
+    <div className="w-full lg:w-1/2 flex flex-col mb-16 px-2 text-left">
       {/* Sektörel İkon ve Başlık */}
       <div className="flex items-center gap-3 mb-6 px-2">
         <div className={`p-2.5 rounded-2xl ${isVideo ? 'bg-orange-600' : 'bg-orange-500'} text-white shadow-lg shadow-orange-200`}>
@@ -50,24 +55,59 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
 
       {/* Ana Çerçeve */}
       <div className="relative group bg-zinc-950 rounded-[3rem] overflow-hidden shadow-[0_25px_60px_-15px_rgba(234,88,12,0.15)] aspect-[4/3] sm:aspect-square lg:aspect-[4/3] border-4 border-white">
-        <div className="w-full h-full">
+        <div className="w-full h-full relative flex items-center justify-center">
           {isVideo ? (
-            <iframe
-              key={currentItem?.url}
-              className="w-full h-full border-0"
-              src={getEmbedUrl(currentItem?.url)}
-              title={currentItem?.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+              
+              {/* [YENİ] VİDEO ARKASI SİNEMATİK BLUR KATMANI */}
+              {/* Sadece normal yatay videolarda (Shorts olmayan) arkaya hareketli blur basar */}
+              {!currentItem?.url?.includes('shorts/') && (
+                <div className="absolute inset-0 w-full h-full pointer-events-none opacity-50 blur-2xl scale-150 z-0 select-none">
+                  <iframe
+                    className="w-full h-full object-cover border-0"
+                    src={getEmbedUrl(currentItem?.url, true)}
+                    title="Arka Plan Ambiyansı"
+                    allow="autoplay; encrypted-media"
+                  />
+                </div>
+              )}
+
+              {/* Ön Plandaki Gerçek Video Oynatıcı */}
+              <iframe
+                key={currentItem?.url}
+                className={`w-full border-0 relative z-10 ${
+                  currentItem?.url?.includes('shorts/') ? 'h-full aspect-[9/16]' : 'aspect-video'
+                }`}
+                src={getEmbedUrl(currentItem?.url, false)}
+                title={currentItem?.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
           ) : (
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Fotoğraf için Blur Arka Planı */}
+              {currentItem?.fitMode === 'contain' && (
+                <div 
+                  className="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 scale-110 pointer-events-none" 
+                  style={{ backgroundImage: `url(${currentItem?.url})` }}
+                />
+              )}
+
+              {/* Fotoğrafın Kendisi */}
               <img 
                 src={currentItem?.url} 
                 alt={currentItem?.title} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                className={`w-full h-full relative z-10 transition-transform duration-700 ${
+                  currentItem?.fitMode === 'contain' ? 'object-contain' : 'object-cover group-hover:scale-110'
+                }`} 
+                style={{ 
+                  objectPosition: currentItem?.fitMode === 'cover' ? (currentItem?.objectPosition || 'center') : 'center' 
+                }} 
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end">
+
+              {/* Fotoğraf Yazı Katmanı */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end z-20 pointer-events-none">
                 <span className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-1">Bakım & Sosyalleşme</span>
                 <h4 className="text-white text-2xl font-black uppercase italic tracking-tighter">{currentItem?.title}</h4>
                 <p className="text-gray-300 text-sm mt-2 opacity-90 font-medium leading-relaxed">{currentItem?.description}</p>
@@ -77,10 +117,10 @@ const PortfolioSlider = ({ title, data, isVideo }) => {
         </div>
 
         {/* Navigasyon Okları */}
-        <button onClick={prevSlide} className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-orange-500 text-white p-4 rounded-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all z-20 border border-white/20">
+        <button onClick={prevSlide} className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-orange-500 text-white p-4 rounded-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all z-30 border border-white/20">
           <ChevronLeft size={24} strokeWidth={3} />
         </button>
-        <button onClick={nextSlide} className="absolute right-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-orange-500 text-white p-4 rounded-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all z-20 border border-white/20">
+        <button onClick={nextSlide} className="absolute right-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-orange-500 text-white p-4 rounded-2xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all z-30 border border-white/20">
           <ChevronRight size={24} strokeWidth={3} />
         </button>
       </div>
