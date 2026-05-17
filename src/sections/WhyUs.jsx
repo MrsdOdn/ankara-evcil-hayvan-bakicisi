@@ -1,41 +1,8 @@
 import React, { useState, useEffect } from 'react';
-// --- FIREBASE BAĞLANTISI ---
 import { db } from '../firebase'; 
 import { ref, onValue } from "firebase/database";
 
 const WhyUs = () => {
-  // 1. Kart yapılarını (Emoji, Başlık, dbKey) koruyoruz
-  const [reasons, setReasons] = useState([
-    {
-      title: "Sertifikalı Uzmanlar",
-      description: "Tüm ekibimiz profesyonel eğitimlerden geçmiş, sertifikalı ve tecrübeli hayvanseverlerden oluşur.",
-      emoji: "📜",
-      detail: "Eğitimli Kadro",
-      dbKey: "reason1Desc" // JSON görselindeki anahtar
-    },
-    {
-      title: "Anlık Takip & Fotoğraf",
-      description: "Gezdirme veya bakım sırasında size canlı konum ve anlık fotoğraflar göndererek içinizi ferah tutuyoruz.",
-      emoji: "📸",
-      detail: "Gözünüz Arkada Kalmasın",
-      dbKey: "reason2Desc" // JSON görselindeki anahtar
-    },
-    {
-      title: "Yüksek Hijyen Standartları",
-      description: "Kullandığımız tüm ekipmanlar ve taşıma araçları her kullanım sonrası titizlikle sterilize edilir.",
-      emoji: "🧼",
-      detail: "Steril Ekipmanlar",
-      dbKey: "reason3Desc" // JSON görselindeki anahtar
-    },
-    {
-      title: "Kişiye Özel Bakım Planı",
-      description: "Her dostumuzun karakteri ve ihtiyaçları farklıdır. Onlara özel beslenme ve oyun programları hazırlıyoruz.",
-      emoji: "🐕",
-      detail: "Butik Hizmet",
-      dbKey: "reason4Desc" // JSON görselindeki anahtar
-    }
-  ]);
-
   const [content, setContent] = useState({
     ustBaslik: "Güvenli Eller",
     anaBaslik: "Neden Bizi",
@@ -45,13 +12,14 @@ const WhyUs = () => {
     istatistikMetin: "Müşteri Memnuniyeti"
   });
 
-  // 2. Firebase'den dinamik verileri çekiyoruz
+  // Başlangıçta boş bir nesne atıyoruz, Firebase'den gelen dinamik kartları map edeceğiz
+  const [kartListesi, setKartListesi] = useState({});
+
   useEffect(() => {
     const dbRef = ref(db);
     const unsubscribe = onValue(dbRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Sol taraftaki genel metinler
         setContent({
           ustBaslik: data.whyUsUstBaslik || "Güvenli Eller",
           anaBaslik: data.whyUsAnaBaslik || "Neden Bizi",
@@ -61,17 +29,14 @@ const WhyUs = () => {
           istatistikMetin: data.whyUsIstatistikMetin || "Müşteri Memnuniyeti"
         });
 
-        // Sağ taraftaki 4 kartın açıklamasını (reasonDesc) güncelle
-        setReasons(prevReasons => 
-          prevReasons.map(r => ({
-            ...r,
-            description: data[r.dbKey] || r.description
-          }))
-        );
+        // Veritabanındaki esnek listeyi al, eğer yoksa veya eskiyse boş nesne ata
+        setKartListesi(data.kartListesi || {});
       }
     });
     return () => unsubscribe();
   }, []);
+
+  const kartAnahtarlari = Object.keys(kartListesi);
 
   return (
     <section id="neden-biz" className="py-24 bg-white">
@@ -97,25 +62,37 @@ const WhyUs = () => {
             </div>
           </div>
 
-          {/* Sağ: Kartlar Alanı */}
+          {/* Sağ: Tamamen Esnek Dinamik Kartlar Alanı */}
           <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {reasons.map((reason, index) => (
-              <div 
-                key={index} 
-                className="p-8 rounded-[2.5rem] bg-gray-50 border border-transparent hover:bg-white hover:shadow-2xl hover:border-orange-100 transition-all duration-500 group"
-              >
-                <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                  {reason.emoji}
+            {kartAnahtarlari.map((key) => {
+              const reason = kartListesi[key];
+              return (
+                <div 
+                  key={key} 
+                  className="p-8 rounded-[2.5rem] bg-gray-50 border border-transparent hover:bg-white hover:shadow-2xl hover:border-orange-100 transition-all duration-500 group"
+                >
+                  <div className="text-5xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                    {reason.emoji || "🐾"}
+                  </div>
+                  <h4 className="text-xl font-bold text-gray-900 mb-3">{reason.title}</h4>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                    {reason.description}
+                  </p>
+                  {reason.detail && (
+                    <div className="inline-block text-[10px] font-black text-orange-700 bg-orange-100 px-3 py-1 rounded-lg uppercase tracking-wider">
+                      {reason.detail}
+                    </div>
+                  )}
                 </div>
-                <h4 className="text-xl font-bold text-gray-900 mb-3">{reason.title}</h4>
-                <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                  {reason.description}
-                </p>
-                <div className="inline-block text-[10px] font-black text-orange-700 bg-orange-100 px-3 py-1 rounded-lg uppercase tracking-wider">
-                  {reason.detail}
-                </div>
+              );
+            })}
+
+            {/* Eğer panelden tüm kartlar silindiyse bir uyarı gösterelim */}
+            {kartAnahtarlari.length === 0 && (
+              <div className="col-span-full text-center p-12 text-zinc-400 text-sm">
+                Yönetim panelinden henüz kart içeriği girilmedi.
               </div>
-            ))}
+            )}
           </div>
 
         </div>
